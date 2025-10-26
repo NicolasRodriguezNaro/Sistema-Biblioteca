@@ -38,7 +38,17 @@ public class MultaRepositoryJdbc implements MultaRepository{
         }
     };
 
-    // ---- Escrituras (procedimientos) ----
+    @Override
+    public void crear(Integer idPrestamo, Integer idTipoMulta, LocalDate fechaNullable, String estadoNullable) {
+        // Hacemos CAST del estado al enum; si viene null que el SP use 'pendiente'
+        final String call = "CALL sp_crear_multa(?, ?, ?, COALESCE(?::estado_multa, 'pendiente'))";
+        try {
+            jdbc.update(call, idPrestamo, idTipoMulta, fechaNullable, estadoNullable);
+        } catch (DataAccessException dae) {
+            throw wrap("Error al crear multa", dae);
+        }
+    }
+
     @Override
     public void pagar(Integer idPrestamo, Integer numMulta) {
         final String call = "CALL sp_pagar_multa(?, ?)";

@@ -7,12 +7,16 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.universidad.biblioteca.backend_server.dto.MultaDto;
+import com.universidad.biblioteca.backend_server.requests.CrearMultaRequest;
 import com.universidad.biblioteca.backend_server.services.MultaService;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 
 @RestController
@@ -21,6 +25,13 @@ public class MultaController {
 
     private final MultaService service;
     public MultaController(MultaService service) { this.service = service; }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'BIBLIOTECARIO')")
+    @PostMapping
+    public ResponseEntity<?> crear(@Valid @RequestBody CrearMultaRequest req) {
+        service.crear(req.getIdPrestamo(), req.getIdTipoMulta(), req.getFecha(), req.getEstado());
+        return ResponseEntity.ok(new Mensaje("Multa creada"));
+    }
 
     @PatchMapping("/prestamo/{idPrestamo}/num/{numMulta}/pagar")
     public ResponseEntity<?> pagar(@PathVariable @Min(1) Integer idPrestamo,

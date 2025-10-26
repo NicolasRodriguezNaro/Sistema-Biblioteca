@@ -12,6 +12,10 @@ public class MultaServiceImpl implements MultaService{
     private final MultaRepository repo;
     public MultaServiceImpl(MultaRepository repo) { this.repo = repo; }
 
+    @Override
+    public void crear(Integer idPrestamo, Integer idTipoMulta, java.time.LocalDate fechaNullable, String estadoNullable) {
+        repo.crear(idPrestamo, idTipoMulta, fechaNullable, estadoNullable == null ? null : estadoNullable.trim().toLowerCase());
+    }
     @Override public void pagar(Integer idPrestamo, Integer numMulta) { repo.pagar(idPrestamo, numMulta); }
     @Override public void anular(Integer idPrestamo, Integer numMulta) { repo.anular(idPrestamo, numMulta); }
 
