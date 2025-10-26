@@ -4,9 +4,9 @@ import java.time.Instant;
 import java.util.List;
 
 import org.bson.types.ObjectId;
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Service;
 
-@Repository
+@Service
 public class ResenaService {
     private final ResenaRepository repo;
 
