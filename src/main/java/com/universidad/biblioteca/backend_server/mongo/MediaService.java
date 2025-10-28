@@ -70,4 +70,12 @@ public class MediaService {
             repo.deleteById(mediaId);
         }
     }
+
+    public java.util.Optional<org.springframework.data.mongodb.gridfs.GridFsResource> descargarBinarioHex(String mediaIdHex) {
+        return descargarBinario(new ObjectId(mediaIdHex));
+    }
+
+    public Optional<MediaDoc> metadataHex(String mediaIdHex) {
+        return metadata(new ObjectId(mediaIdHex));
+    }
 }

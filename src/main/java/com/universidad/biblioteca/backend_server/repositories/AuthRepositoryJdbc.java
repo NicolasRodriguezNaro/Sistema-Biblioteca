@@ -16,26 +16,24 @@ public class AuthRepositoryJdbc implements AuthRepository{
     @Override
     public Optional<UserAuth> findByCorreo(String correoLower) {
         final String sql = """
-            SELECT u.pfk_idpersona AS id_usuario,
-                   u.correo,
-                   u.contrasena,
-                   u.estado_usuario::text AS estado,
-                   u.correo_verificado,
-                   u.token_version
-            FROM esquema_seguridad.usuario u
-            WHERE lower(u.correo) = lower(?)
+            SELECT id_usuario, correo, contrasena, estado, correo_verificado, token_version
+            FROM fn_usuario_auth_por_correo(?)
             """;
-        return jdbc.query(sql, rs -> {
-            if (!rs.next()) return Optional.empty();
-            return Optional.of(new UserAuth(
-                rs.getInt("id_usuario"),
-                rs.getString("correo"),
-                rs.getString("contrasena"),
-                rs.getString("estado"),
-                rs.getBoolean("correo_verificado"),
-                rs.getInt("token_version")
-            ));
-        }, correoLower);
+        try {
+            return jdbc.query(sql, rs -> {
+                if (!rs.next()) return Optional.empty();
+                return Optional.of(new UserAuth(
+                    rs.getInt("id_usuario"),
+                    rs.getString("correo"),
+                    rs.getString("contrasena"),
+                    rs.getString("estado"),
+                    rs.getBoolean("correo_verificado"),
+                    rs.getInt("token_version")
+                ));
+            }, correoLower);
+        } catch (DataAccessException dae) {
+            throw wrap("Error al buscar usuario por correo", dae);
+        }
     }
 
     @Override
@@ -71,22 +69,24 @@ public class AuthRepositoryJdbc implements AuthRepository{
     @Override
     public Optional<UserAuth> findById(Integer idUsuario) {
         final String sql = """
-        SELECT u.pfk_idpersona AS id_usuario, u.correo, u.contrasena, u.estado_usuario::text AS estado,
-                u.correo_verificado, u.token_version
-        FROM esquema_seguridad.usuario u
-        WHERE u.pfk_idpersona = ?
-        """;
-        return jdbc.query(sql, rs -> {
-            if(!rs.next()) return Optional.empty();
-            return Optional.of(new UserAuth(
-                rs.getInt("id_usuario"),
-                rs.getString("correo"),
-                rs.getString("contrasena"),
-                rs.getString("estado"),
-                rs.getBoolean("correo_verificado"),
-                rs.getInt("token_version")
-            ));
-        }, idUsuario);
+            SELECT id_usuario, correo, contrasena, estado, correo_verificado, token_version
+            FROM fn_usuario_auth_por_id(?)
+            """;
+        try {
+            return jdbc.query(sql, rs -> {
+                if (!rs.next()) return Optional.empty();
+                return Optional.of(new UserAuth(
+                    rs.getInt("id_usuario"),
+                    rs.getString("correo"),
+                    rs.getString("contrasena"),
+                    rs.getString("estado"),
+                    rs.getBoolean("correo_verificado"),
+                    rs.getInt("token_version")
+                ));
+            }, idUsuario);
+        } catch (DataAccessException dae) {
+            throw wrap("Error al buscar usuario por id", dae);
+        }
     }
 
     private RuntimeException wrap(String ctx, DataAccessException dae) {

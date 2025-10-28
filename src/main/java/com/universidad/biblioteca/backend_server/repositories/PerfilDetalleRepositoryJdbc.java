@@ -16,7 +16,7 @@ public class PerfilDetalleRepositoryJdbc implements PerfilDetalleRepository{
 
     @Override
     public Optional<PerfilDto> findDetalleById(Integer idUsuario) {
-        final String sql = "SELECT * FROM esquema_seguridad.fn_perfil_usuario_detalle_por_id(?)";
+        final String sql = "SELECT * FROM fn_perfil_usuario_detalle_por_id(?)";
         try {
             return jdbc.query(sql, rs -> {
                 if (!rs.next()) return Optional.empty();
@@ -29,7 +29,7 @@ public class PerfilDetalleRepositoryJdbc implements PerfilDetalleRepository{
 
     @Override
     public Optional<PerfilDto> findDetalleByCorreo(String correo) {
-        final String sql = "SELECT * FROM esquema_seguridad.fn_perfil_usuario_detalle_por_correo(?)";
+        final String sql = "SELECT * FROM fn_perfil_usuario_detalle_por_correo(?)";
         try {
             return jdbc.query(sql, rs -> {
                 if (!rs.next()) return Optional.empty();

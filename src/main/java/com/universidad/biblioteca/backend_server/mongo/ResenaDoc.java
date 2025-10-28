@@ -6,10 +6,20 @@ import java.util.List;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
+@CompoundIndexes({
+    // Opcional pero recomendado: evita 2 reseñas del mismo usuario sobre el mismo libro
+    @CompoundIndex(name = "ux_libro_usuario", def = "{'idLibro': 1, 'usuarioId': 1}", unique = true)
+})
 public class ResenaDoc {
     @Id
+    @JsonSerialize(using = ToStringSerializer.class)  // <- 🔧 hace que el _id se emita como String
     private ObjectId id;
 
     @Indexed

@@ -24,7 +24,7 @@ public class PerfilRepositoryJdbc implements PerfilRepository{
                    nombre_rol,
                    correo_verificado,
                    token_version
-            FROM esquema_seguridad.v_perfil_usuario
+            FROM v_perfil_usuario
             WHERE id_usuario = ?
             """;
         try {

@@ -34,17 +34,11 @@ public class EjemplarRepositoryJdbc implements EjemplarRepository{
 
     @Override
     public Integer agregarUno(Integer idLibro) {
-        final String call = "CALL sp_agregar_ejemplar(?)";
+        final String sql = "SELECT fn_agregar_ejemplar_y_retornar(?)";
         try {
-            jdbc.update(call, idLibro);
-            // Como el SP no retorna el numero, lo consultamos (último asignado)
-            final String sql = """
-                SELECT numero FROM esquema_biblioteca.ejemplar
-                WHERE pfk_idlibro = ?
-                ORDER BY numero DESC
-                LIMIT 1
-                """;
-            return jdbc.queryForObject(sql, Integer.class, idLibro);
+            Integer numero = jdbc.queryForObject(sql, Integer.class, idLibro);
+            if (numero == null) throw new RuntimeException("No se pudo obtener el número del ejemplar creado");
+            return numero;
         } catch (DataAccessException dae) {
             throw wrap("Error al agregar ejemplar", dae);
         }

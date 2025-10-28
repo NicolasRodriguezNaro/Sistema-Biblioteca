@@ -2,7 +2,6 @@ package com.universidad.biblioteca.backend_server.controllers;
 
 import java.util.List;
 
-import org.bson.types.ObjectId;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -39,16 +38,16 @@ public class ResenaController {
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/{idResena}/responder")
     public ResponseEntity<?> responder(@PathVariable String idResena,
-                                       @AuthenticationPrincipal Integer idUsuario,
-                                       @RequestBody RespuestaReq req) {
-        service.responder(new ObjectId(idResena), idUsuario, req.comentario);
+                                    @AuthenticationPrincipal Integer idUsuario,
+                                    @RequestBody RespuestaReq req) {
+        service.responder(idResena, idUsuario, req.comentario);
         return ResponseEntity.ok(new Msg("Respuesta agregada"));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','BIBLIOTECARIO')")
     @DeleteMapping("/{idResena}")
     public ResponseEntity<?> eliminar(@PathVariable String idResena) {
-        service.eliminar(new ObjectId(idResena));
+        service.eliminar(idResena);
         return ResponseEntity.ok(new Msg("Reseña eliminada"));
     }
 

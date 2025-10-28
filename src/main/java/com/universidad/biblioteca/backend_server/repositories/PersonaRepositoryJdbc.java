@@ -45,7 +45,7 @@ public class PersonaRepositoryJdbc implements PersonaRepository{
                            String tipoDocumento) {
         // NOTA: usamos CAST(? AS esquema_personas.tipo_documento) para que acepte NULL sin problemas
         final String call = """
-            CALL esquema_personas.sp_actualizar_persona(
+            CALL sp_actualizar_persona(
               ?, ?, ?, ?, ?, ?, ?, CAST(? AS tipo_documento)
             )
             """;

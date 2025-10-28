@@ -3,8 +3,11 @@ package com.universidad.biblioteca.backend_server.controllers;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.bson.types.ObjectId;
+import org.springframework.data.mongodb.gridfs.GridFsResource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -19,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.universidad.biblioteca.backend_server.mongo.MediaDoc;
+import com.universidad.biblioteca.backend_server.mongo.MediaDto;
 import com.universidad.biblioteca.backend_server.mongo.MediaService;
 
 @RestController
@@ -27,58 +30,70 @@ import com.universidad.biblioteca.backend_server.mongo.MediaService;
 public class MediaController {
     
     private final MediaService service;
+
     public MediaController(MediaService service) { this.service = service; }
 
+    // ---- SUBIR ----
     @PreAuthorize("hasAnyRole('ADMIN','BIBLIOTECARIO')")
     @PostMapping(path = "/libro/{idLibro}/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<MediaDoc> upload(@PathVariable Integer idLibro,
-                                        @RequestParam("file") MultipartFile file,
-                                        @RequestParam("tipoArchivo") String tipoArchivo,
-                                        @RequestParam(value = "descripcion", required = false) String descripcion,
-                                        @RequestParam Map<String,String> form) throws IOException {
+    public ResponseEntity<MediaDto> upload(@PathVariable Integer idLibro,
+                                           @RequestParam("file") MultipartFile file,
+                                           @RequestParam("tipoArchivo") String tipoArchivo,
+                                           @RequestParam(value = "descripcion", required = false) String descripcion,
+                                           @RequestParam Map<String,String> form) throws IOException {
 
-        // Construir metadatos sin tocar el mapa original y sin casts inseguros
-        java.util.Map<String,Object> metadatos = new java.util.HashMap<>();
-        for (var e : form.entrySet()) {
-            String k = e.getKey();
-            if (!"file".equals(k) && !"tipoArchivo".equals(k) && !"descripcion".equals(k)) {
-                metadatos.put(k, e.getValue()); // String es asignable a Object sin cast
-            }
-        }
+        // Metadatos libres (sin casts inseguros)
+        Set<String> reservadas = Set.of("file","tipoArchivo","descripcion");
+        Map<String,Object> metadatos = form.entrySet().stream()
+                .filter(e -> !reservadas.contains(e.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> (Object)e.getValue()));
 
-        var doc = service.subir(
-            idLibro, tipoArchivo, file.getOriginalFilename(),
-            file.getContentType(), descripcion,
-            metadatos, file.getInputStream()
+        var saved = service.subir(
+                idLibro, tipoArchivo,
+                file.getOriginalFilename(),
+                file.getContentType(),
+                descripcion,
+                metadatos,
+                file.getInputStream()
         );
-        return ResponseEntity.ok(doc);
+        return ResponseEntity.ok(MediaDto.of(saved));
     }
 
+    // ---- LISTAR POR LIBRO (solo metadata, no binario) ----
     @GetMapping("/libro/{idLibro}")
-    public ResponseEntity<List<MediaDoc>> listar(@PathVariable Integer idLibro) {
-        return ResponseEntity.ok(service.listarPorLibro(idLibro));
+    public ResponseEntity<List<MediaDto>> listarPorLibro(@PathVariable Integer idLibro) {
+        var list = service.listarPorLibro(idLibro).stream().map(MediaDto::of).toList();
+        return ResponseEntity.ok(list);
     }
 
+    // ---- METADATA POR ID ----
+    @GetMapping("/{mediaId}")
+    public ResponseEntity<?> metadata(@PathVariable String mediaId) {
+        return service.metadata(new ObjectId(mediaId))
+                .map(MediaDto::of)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(404).body(new Msg("No existe media")));
+    }
+
+    // ---- DESCARGAR BINARIO ----
     @GetMapping("/{mediaId}/archivo")
     public ResponseEntity<?> descargar(@PathVariable String mediaId) throws IOException {
-        var opt = service.descargarBinario(new ObjectId(mediaId));
-        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        var opt = service.descargarBinarioHex(mediaId);
+        if (opt.isEmpty()) return ResponseEntity.status(404).body(new Msg("No existe media o archivo"));
+        GridFsResource res = opt.get();
 
-        var res = opt.get();
         var bytes = res.getInputStream().readAllBytes();
-
         String ct = res.getContentType();
         if (ct == null || ct.isBlank()) ct = "application/octet-stream";
+        String filename = (res.getFilename()!=null && !res.getFilename().isBlank()) ? res.getFilename() : "archivo";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(ct));
-        String filename = (res.getFilename() != null && !res.getFilename().isBlank())
-                ? res.getFilename() : "archivo";
-        headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
-
+        headers.setContentDisposition(ContentDisposition.inline().filename(filename).build());
         return ResponseEntity.ok().headers(headers).body(bytes);
     }
 
+    // ---- ELIMINAR ----
     @PreAuthorize("hasAnyRole('ADMIN','BIBLIOTECARIO')")
     @DeleteMapping("/{mediaId}")
     public ResponseEntity<?> eliminar(@PathVariable String mediaId) {
@@ -86,6 +101,7 @@ public class MediaController {
         return ResponseEntity.ok(new Msg("Media eliminado"));
     }
 
-    static class Msg { public final String message; Msg(String m){ this.message = m; } }
+    // Mensaje simple
+    static class Msg { public final String message; Msg(String m){ this.message=m; } }
 
 }
