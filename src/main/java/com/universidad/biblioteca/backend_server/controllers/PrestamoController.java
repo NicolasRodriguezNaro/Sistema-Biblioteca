@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,9 +31,10 @@ public class PrestamoController {
 
     @PreAuthorize("hasAuthority('perm:prestamo.crear')")
     @PostMapping
-    public ResponseEntity<?> crear(@Valid @RequestBody CrearPrestamoRequest req) {
+    public ResponseEntity<?> crear(@AuthenticationPrincipal Integer idUsuario,
+                                    @Valid @RequestBody CrearPrestamoRequest req) {
         service.crear(
-            req.getIdUsuario(), req.getIdLibro(), req.getNumeroEjemplar(),
+            idUsuario, req.getIdLibro(), req.getNumeroEjemplar(),
             req.getFechaPrestamo(), req.getFechaDevolucionProgramada(), req.getIdReserva()
         );
         return ResponseEntity.created(URI.create("/api/prestamos"))

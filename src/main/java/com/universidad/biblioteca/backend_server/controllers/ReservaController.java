@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,15 +24,18 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/reservas")
 public class ReservaController {
-    
+
     private final ReservaService service;
 
-    public ReservaController(ReservaService service) { this.service = service; }
+    public ReservaController(ReservaService service) {
+        this.service = service;
+    }
 
     @PreAuthorize("hasAuthority('perm:reserva.crear')")
     @PostMapping
-    public ResponseEntity<?> crear(@Valid @RequestBody CrearReservaRequest req) {
-        service.crear(req.getIdUsuario(), req.getIdLibro(), req.getFecha());
+    public ResponseEntity<?> crear(@AuthenticationPrincipal Integer idUsuario,
+                                @Valid @RequestBody CrearReservaRequest req) {
+        service.crear(idUsuario, req.getIdLibro(), req.getFecha());
         return ResponseEntity.created(URI.create("/api/reservas"))
                 .body(new Mensaje("Reserva creada"));
     }
@@ -95,6 +99,9 @@ public class ReservaController {
 
     static class Mensaje {
         public final String message;
-        public Mensaje(String m) { this.message = m; }
+
+        public Mensaje(String m) {
+            this.message = m;
+        }
     }
 }
